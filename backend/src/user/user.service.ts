@@ -8,7 +8,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from './entities/user.entity';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 
 @Injectable()
 export class UserService {
@@ -85,4 +85,24 @@ export class UserService {
   }
 
   // Refresh Token Helper Methods
+  async findOneWithSensitive(id: string) {
+    return this.userModel
+      .findById(id)
+      .select('+passwordHash +refreshTokenHash +tokenVersion')
+      .exec();
+  }
+
+  async updateRefreshTokenHash(userId: string, hash: string | null) {
+    await this.userModel.updateOne(
+      { _id: new Types.ObjectId(userId) },
+      { $set: { refreshTokenHash: hash } },
+    );
+  }
+
+  async incrementTokenVersion(userId: string) {
+    await this.userModel.updateOne(
+      { _id: new Types.ObjectId(userId) },
+      { $inc: { tokenVersion: 1 }, $set: { refreshTokenHash: null } },
+    );
+  }
 }
